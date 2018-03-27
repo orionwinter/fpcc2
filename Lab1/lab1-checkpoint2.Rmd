@@ -1,0 +1,106 @@
+---
+title: "Análise exploratória dos dados do TravisTorrent"
+output: html_notebook
+---
+
+## Introdução
+
+O [Travis](https://travis-ci.org/) é um serviço de [integração contínua](https://en.wikipedia.org/wiki/Continuous_integration) utilizado para construir e testar _softwares_ hospedados no GitHub, um sistema de controle de versão que utiliza o [git](https://en.wikipedia.org/wiki/Git).
+Nesta análise iremos explorar os dados do TravisTorrent, uma base de dados que contém informações de repositórios públicos do GitHub, bem como dados de log do Travis do respectivo projeto.
+
+Primeiramente vamos importar as bibliotecas utilizadas nesta análise, bem como os dados que utilizaremos na mesma:
+
+```{r setup}
+library(tidyverse)
+
+projetos <- read_csv("data/projetos.csv")
+```
+
+Vejamos a estrutura dos dados:
+
+```{r}
+projetos %>% 
+  str()
+```
+
+Vemos que existem 16 variáveis nos dados:
+
+* gh_project_name:        o nome do projeto
+* team:                   a mediana do tamanho do time no decorrer do projeto 
+* lang:                   a linguagem predominante do projeto na última medição
+* sloc_end:               a quantidade máxima de linhas de código durante as medições do projeto
+* sloc_med:               a quantidade mediana de linhas de código durante as medições do projeto
+* activity_period:        a quantidade de meses de atividade do projeto
+* num_commits:            a quantidade de commits do projeto
+* commits_per_month:      número de commits por mês
+* tests_per_kloc:         quantidade máxima de testes no decorrer do projeto
+* total_builds:           número total de buils
+* build_success_prop:     proporção de builds que tiveram sucesso
+* builds_per_month:       número de builds por mês
+* tests_added_per_build:  número de testes por linha de código
+* tests_successful:       proporção média de testes que tiveram sucesso 
+* test_density:           quantidade mediana de casos de testes por mil linhas de código 
+* test_size_avg:          número médio de linhas por caso de teste
+  
+## Tamanho dos times  
+
+Vejamos inicialmente como se comportam os dados do tamanho do time:
+
+```{r}
+projetos %>% 
+  ggplot(aes(x = "tamanho do time", y = team)) +
+    geom_jitter(alpha = 0.3) +
+  labs(x = "times", y = "tamanho dos times", title = "Tamanho dos times dos projetos")
+```
+
+Podemos ver que a maior parte dos times tem tamanho pequeno, menor que 25, onde a mediana é `{r projetos %>% pull(team) %>% median()}`.
+
+Vejamos a distribuição destes dados de forma mais sintetizada:
+
+```{r}
+projetos %>% 
+  ggplot(aes(x = team)) +
+  geom_histogram(binwidth = 5) +
+  labs(x = "tamanho dos times", y = "contagem", title = "Histograma da quantidade de times")
+```
+
+Vemos que realmente a maior parte dos projetos tem tamanhos de times pequenos, visto que os dados são enviesados à direita.
+
+### Tamanho dos times por linguagem
+
+Vejamos agora se existe diferença entre o tamanho dos times cujo projeto é feito majoritariamente em java ou em ruby: 
+
+```{r}
+projetos %>% 
+  ggplot(aes(x = lang, y = team)) +
+  geom_jitter(alpha = 0.3)
+```
+
+Vemos que em ambas linguagens a maior parte dos projetos tem times pequenos, porém notamos também que existem 4 projetos que foram feitos em javascript. Vejamos quais são estes:
+
+```{r}
+projetos %>% 
+  filter(lang == "javascript") %>% 
+  select(gh_project_name)
+```
+
+Pesquisando no github, dois projetos estão descritos em chinês, enquanto outros dois não parecem tem linguagem muito bem definida. Com isso, descartaremos estas observações.
+
+```{r}
+projetos.filt <- projetos %>% 
+  filter(lang != "javascript")
+```
+
+Vejamos como se comportam os dados os dados de tamanho de times de java e ruby em mais alto nível:
+
+```{r}
+projetos.filt %>% 
+  ggplot(aes(x = team)) +
+    geom_histogram(binwidth = 5) +
+    facet_grid(lang ~ ., scales = "free_y")
+```
+
+Os dados tem uma distribuição muito semelhante, visto que ambos são bastante assimétricos e enviesados à direita. Além disso, a faixa de valores entre 5 e 10 contém expressivamente mais projetos que as demais, bem como a faixa entre 0 e 5 tem valor um pouco maior que a faixa entre 10 e 15. 
+
+
+
