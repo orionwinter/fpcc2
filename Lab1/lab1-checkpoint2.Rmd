@@ -1,6 +1,8 @@
 ---
 title: "Análise exploratória dos dados do TravisTorrent"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ## Introdução
@@ -53,7 +55,7 @@ projetos %>%
   labs(x = "times", y = "tamanho dos times", title = "Tamanho dos times dos projetos")
 ```
 
-Podemos ver que a maior parte dos times tem tamanho pequeno, menor que 25, onde a mediana é `{r projetos %>% pull(team) %>% median()}`.
+Podemos ver que a maior parte dos times tem tamanho pequeno, menor que 25, onde a mediana é `r projetos %>% pull(team) %>% median()` e os tamanhos dos times vão de `r projetos %>% pull(team) %>% min()` à `r projetos %>% pull(team) %>% max()`.
 
 Vejamos a distribuição destes dados de forma mais sintetizada:
 
@@ -68,12 +70,13 @@ Vemos que realmente a maior parte dos projetos tem tamanhos de times pequenos, v
 
 ### Tamanho dos times por linguagem
 
-Vejamos agora se existe diferença entre o tamanho dos times cujo projeto é feito majoritariamente em java ou em ruby: 
+Vejamos agora se existe diferença entre o tamanho dos times quando variamos a linguagem entre java e ruby: 
 
 ```{r}
 projetos %>% 
   ggplot(aes(x = lang, y = team)) +
-  geom_jitter(alpha = 0.3)
+  geom_jitter(alpha = 0.3) + 
+  labs(x = "linguagem", y = "times", title = "Quantidade de times por linguagem")
 ```
 
 Vemos que em ambas linguagens a maior parte dos projetos tem times pequenos, porém notamos também que existem 4 projetos que foram feitos em javascript. Vejamos quais são estes:
@@ -97,10 +100,96 @@ Vejamos como se comportam os dados os dados de tamanho de times de java e ruby e
 projetos.filt %>% 
   ggplot(aes(x = team)) +
     geom_histogram(binwidth = 5) +
-    facet_grid(lang ~ ., scales = "free_y")
+    facet_grid(lang ~ ., scales = "free_y") +
+    labs(x = "tamanho do time", y = "contagem", title = "Histograma da quantidade dos times por linguagem")
 ```
 
 Os dados tem uma distribuição muito semelhante, visto que ambos são bastante assimétricos e enviesados à direita. Além disso, a faixa de valores entre 5 e 10 contém expressivamente mais projetos que as demais, bem como a faixa entre 0 e 5 tem valor um pouco maior que a faixa entre 10 e 15. 
 
+```{r}
+projetos.filt %>% 
+  group_by(lang) %>% 
+  summarise(mediana = median(team))
+```
 
+Apesar de existirem mais valores extremos em ruby do que em java, a mediana do tamanho do time em ambas linguagens é 5. Com isso, concluímos que não existe diferença significativa do tamanho dos times entre as linguagens ruby e java nos dados apresentados.
 
+## Builds com sucesso
+
+Vejamos agora a proporção de sucesso dos builds nos diferentes projetos:
+
+```{r}
+projetos.filt %>% 
+  ggplot(aes(x = "projetos", y = build_success_prop)) +
+    geom_jitter(alpha = 0.3) +
+    labs(x = "projetos", y = "proporção de builds que tiveram sucesso", title = "Proporção dos builds que tiveram sucesso por projeto")
+```
+
+Vemos que a maior parte dos projetos tem proporção de builds que deram sucesso acima de 0.5, onde a mediana é `r projetos %>% pull(build_success_prop) %>% median()` e os valores vão de `r projetos %>% pull(build_success_prop) %>% min()` à `r projetos %>% pull(build_success_prop) %>% max()`.
+
+Vejamos agora se existe relação entre a proporção de builds que tiveram sucesso e o tamanho do time:
+
+```{r}
+projetos.filt %>% 
+  ggplot(aes(x = team, y = build_success_prop)) +
+    geom_point() +
+    labs(x = "tamanho do time", y = "proporção de builds que tiveram sucesso", title = "Proporção dos builds que tiveram sucesso por tamanho de time")
+```
+
+Podemos perceber que projetos de até 10 integrantes não parece existir uma relação entre as duas variáveis, mas acima deste valor, parece existir uma tendência crescente. Vejamos se isso realmente se confirma:
+
+```{r}
+projetos.times.maiores.10 <- projetos.filt %>% 
+  filter(team >= 10)
+ 
+projetos.times.maiores.10%>% 
+  ggplot(aes(x = team, y = build_success_prop)) +
+    geom_point() +
+    labs(x = "tamanho do time", y = "proporção de builds que tiveram sucesso", title = "Proporção dos builds que tiveram sucesso\n por tamanho de times maiores que 10")
+```
+
+Apesar de existir um afunilamento com tendência crescente, a relação entre as duas variáveis não é muito expressiva, como podemos ver a seguir:
+
+```{r}
+cor(projetos.times.maiores.10 %>% pull(team), projetos.times.maiores.10 %>% pull(build_success_prop), method = "spearman")
+```
+
+Vejamos se existe diferença da proporção dos builds que tiveram sucesso nas linguagens:
+
+```{r}
+projetos.filt %>% 
+  ggplot(aes(x = lang, y = build_success_prop)) +
+    geom_jitter(alpha = 0.3) +
+    labs(x = "projetos", y = "proporção de builds que tiveram sucesso", title = "Proporção dos builds que tiveram sucesso por projeto")
+```
+
+Parece existir uma ligeira diferença entre as linguagens, principalmente com relação a sua variação. Vejamos se isso se confirma em outra visualização:
+
+```{r}
+projetos.filt %>% 
+  ggplot(aes(x = lang, y = build_success_prop)) +
+    geom_boxplot() + 
+    labs(x = "linguagem", y = "proporção de builds que tiveram sucesso", title = "Variação da proporção de builds que tiveram sucesso por linguagem")
+```
+
+Não parece existir uma diferença muito significativa em suas variações. Vejamos se o afunilamento que verificamos anteriormente influencia na variação da proporção dos builds que tiveram sucesso. Para isso, continuaremos com a métrica de filtrar projetos que tem pelo menos 10 integrantes em seu time.
+
+```{r}
+projetos.times.maiores.10 %>% 
+  ggplot(aes(x = lang, y = build_success_prop)) +
+    geom_boxplot() + 
+    labs(x = "linguagem", y = "proporção de builds que tiveram sucesso", title = "Variação da proporção de builds que tiveram sucesso por linguagem, considerando times maiores ou iguais a 10")
+```
+
+Vemos que a variação da proporção de builds que tiveram sucesso é maior em java do que em ruby, como podemos ver na tabela a seguir:
+
+```{r}
+projetos.times.maiores.10 %>% 
+  group_by(lang) %>% 
+  summarise(desvio.padrão.prop.build.success = sd(build_success_prop),
+            media.prop.build.success = mean(build_success_prop))
+```
+
+Considerando que ambas linguagens tiveram médias de proporção de builds que tiveram sucesso muito próximas e que a proporção de builds que tiveram sucesso vai de 0 à 1, uma variação de 0.05 é uma dispersão considerável nos dados. Com isso, concluímos que existe uma diferença significativa da variação da proporção dos builds que tiveram sucesso ao mudarmos a linguagem de programação, para projetos que tem pelo menos 10 integrantes em seus times nos dados apresentados.
+
+___
