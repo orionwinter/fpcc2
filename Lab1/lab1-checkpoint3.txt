@@ -1,0 +1,19 @@
+Perguntas checkpoint 3:
+
+1. Existe alguma influência da quantidade de testes de um projeto na proporção de sucesso dos builds?
+R: Sim, pois acredito que, no geral, um código mais testado tem menor quantidade de erros.
+
+2. Existe alguma relação entre o tamanho dos testes e sua taxa de sucesso?
+R: Não, pois acredito que um teste maior não necessariamente tenha melhor cobertura que um menor.
+
+3. Existe alguma diferença no tamanho dos testes de ruby para os de java?
+R: Sim, pois acredito que os projetos java sejam maiores que os ruby.
+
+4. Quanto mais frequente a integração contínua do projeto, melhor sua taxa de builds com sucesso?
+R: Sim, pois acredito que quanto mais frequente a integração contínua, menores as modificações sejam, logo, menor a quantidade de erros gerados
+
+5. Projetos java tendem a ser maiores que ruby?
+R: Sim, pois acredito que os códigos java sejam mais prolixos que os ruby, pela própria sintaxe da linguagem.
+
+6. Times pequenos tendem ter uma integração contínua mais frequente que os grandes?
+R: Não, pois acredito que times pequenos tendem a trabalhar mais localmente que os grandes, logo tem uma integração contínua menos frequente que os times grandes.
